@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fluvius Upload & Overzicht</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="header">
+        <div>
+          <p class="eyebrow">Energieportaal</p>
+          <h1>Fluvius-bestand uploaden</h1>
+          <p class="subtext">
+            Upload je Fluvius export en krijg meteen inzicht in totale kost,
+            maandelijkse trends en piek- versus dalverbruik.
+          </p>
+        </div>
+        <button class="primary">Nieuwe analyse starten</button>
+      </header>
+
+      <section class="upload-card">
+        <div class="upload-panel">
+          <div class="upload-icon">⬆️</div>
+          <div>
+            <h2>Bestand uploaden</h2>
+            <p class="muted">CSV of XLSX, maximaal 10 MB.</p>
+          </div>
+          <label class="upload-button" for="file-upload">Selecteer bestand</label>
+          <input id="file-upload" type="file" accept=".csv,.xlsx" />
+          <div class="upload-feedback error">
+            <strong>Upload mislukt.</strong>
+            Controleer of je bestand een geldig Fluvius-format heeft en probeer opnieuw.
+          </div>
+          <div class="upload-feedback success">
+            <strong>Bestand ontvangen!</strong>
+            Je gegevens worden nu verwerkt.
+          </div>
+        </div>
+        <div class="summary-panel">
+          <h2>Overzicht</h2>
+          <div class="summary-metrics">
+            <div class="metric">
+              <p class="metric-label">Totale kost</p>
+              <p class="metric-value">€ 1.482,30</p>
+              <span class="metric-trend positive">+4,2% vs vorig jaar</span>
+            </div>
+            <div class="metric">
+              <p class="metric-label">Gemiddelde maandkost</p>
+              <p class="metric-value">€ 123,50</p>
+              <span class="metric-trend neutral">stabiel</span>
+            </div>
+            <div class="metric">
+              <p class="metric-label">Piekuren</p>
+              <p class="metric-value">64%</p>
+              <span class="metric-trend warning">hoog aandeel</span>
+            </div>
+          </div>
+          <div class="download-card">
+            <div>
+              <h3>Download resultaten</h3>
+              <p class="muted">Exporteer de analyse als PDF of Excel.</p>
+            </div>
+            <div class="download-actions">
+              <button class="secondary">Download PDF</button>
+              <button class="ghost">Download Excel</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="dashboard">
+        <div class="dashboard-header">
+          <h2>Samenvattend dashboard</h2>
+          <button class="ghost">Toon filteropties</button>
+        </div>
+        <div class="dashboard-grid">
+          <div class="card">
+            <h3>Kost per maand</h3>
+            <p class="muted">Laatste 12 maanden</p>
+            <div class="chart bars" aria-label="Kost per maand">
+              <span style="--value: 78" data-label="Jan">€118</span>
+              <span style="--value: 68" data-label="Feb">€102</span>
+              <span style="--value: 82" data-label="Mrt">€124</span>
+              <span style="--value: 74" data-label="Apr">€109</span>
+              <span style="--value: 90" data-label="Mei">€132</span>
+              <span style="--value: 96" data-label="Jun">€144</span>
+              <span style="--value: 70" data-label="Jul">€106</span>
+              <span style="--value: 88" data-label="Aug">€128</span>
+              <span style="--value: 79" data-label="Sep">€117</span>
+              <span style="--value: 86" data-label="Okt">€125</span>
+              <span style="--value: 92" data-label="Nov">€136</span>
+              <span style="--value: 80" data-label="Dec">€119</span>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Piekuren vs. daluren</h3>
+            <p class="muted">Verdeling van verbruik</p>
+            <div class="chart donut" aria-label="Piekuren vs daluren">
+              <div class="donut-ring"></div>
+              <div class="donut-center">
+                <p class="donut-value">64%</p>
+                <span class="muted">piekuren</span>
+              </div>
+            </div>
+            <div class="legend">
+              <div><span class="dot peak"></span>Piekuren (64%)</div>
+              <div><span class="dot offpeak"></span>Daluren (36%)</div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Maandelijkse breakdown</h3>
+            <p class="muted">Kosten, verbruik en netkosten</p>
+            <table class="breakdown">
+              <thead>
+                <tr>
+                  <th>Maand</th>
+                  <th>Verbruik</th>
+                  <th>Netkosten</th>
+                  <th>Totaal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>September</td>
+                  <td>312 kWh</td>
+                  <td>€ 28,10</td>
+                  <td>€ 118,40</td>
+                </tr>
+                <tr>
+                  <td>Oktober</td>
+                  <td>351 kWh</td>
+                  <td>€ 30,90</td>
+                  <td>€ 129,10</td>
+                </tr>
+                <tr>
+                  <td>November</td>
+                  <td>390 kWh</td>
+                  <td>€ 32,40</td>
+                  <td>€ 140,80</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>
