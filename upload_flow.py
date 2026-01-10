@@ -103,7 +103,12 @@ def _parse_csv(
     errors: list[ParsingError],
 ) -> list[dict[str, str | float]]:
     with raw_path.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
+        # Fluvius CSVs often use semicolons
+        content = handle.read(1024)
+        handle.seek(0)
+        dialect = csv.Sniffer().sniff(content) if content else "excel"
+        reader = csv.DictReader(handle, delimiter=dialect.delimiter if hasattr(dialect, 'delimiter') else ';')
+        
         if reader.fieldnames is None:
             errors.append(
                 ParsingError(
@@ -136,19 +141,18 @@ def _parse_csv(
 
         rows: list[dict[str, str | float]] = []
         for index, row in enumerate(reader, start=2):
+            # Only process "Afname" registers if present, to avoid duplicates or injection data
+            register = row.get("Register", "")
+            if register and "Afname" not in register:
+                continue
+
             raw_value = (row.get(value_key) or "").strip()
             if not raw_value:
-                errors.append(
-                    ParsingError(
-                        code="missing_value",
-                        message="Lege waarde gevonden.",
-                        row=index,
-                    )
-                )
                 continue
+            
             value = _parse_float(raw_value, index, errors)
 
-            if timestamp_key:
+            if timestamp_key and not (date_key and time_key):
                 timestamp_raw = (row.get(timestamp_key) or "").strip()
                 local_dt = _parse_timestamp(timestamp_raw, tzinfo, index, errors)
             else:
@@ -321,6 +325,8 @@ def _parse_datetime_fallback(raw: str) -> dt.datetime | None:
         "%d-%m-%Y %H:%M",
         "%d/%m/%Y %H:%M:%S",
         "%d-%m-%Y %H:%M:%S",
+        "%d-%m-%Y %H:%M:%S",
+        "%d-%m-%Y %H:%M",
     ]
     for fmt in formats:
         try:
