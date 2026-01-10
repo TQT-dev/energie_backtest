@@ -1,6 +1,7 @@
 # Energie backtest
 
-Minimale projectstructuur voor het voorbereiden van Fluvius-data en tarieven.
+Minimale projectstructuur om Fluvius-data te uploaden en een dynamische
+energieprijs-backtest te draaien.
 
 ## Projectstructuur
 
@@ -8,9 +9,27 @@ Minimale projectstructuur voor het voorbereiden van Fluvius-data en tarieven.
 .
 ├── docs/
 │   └── fluvius_voorbeeld.csv
+├── energie_backtest/
+├── app.py
 ├── src/
 └── README.md
 ```
+
+## Lokale app starten
+
+Installeer (optionele) dependencies en start de app:
+
+```
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python app.py
+```
+
+Open daarna `http://localhost:8000` om het uploadscherm te gebruiken.
+
+> Let op: `openpyxl` is alleen nodig als je Excel-bestanden uploadt. CSV-upload
+> werkt zonder extra dependencies.
 
 ## Verwachte data (Fluvius-export)
 
@@ -59,6 +78,10 @@ tarief_type,start,einde,prijs_eur_per_kwh
 afname,2024-01-01,2024-06-30,0.32
 injectie,2024-01-01,2024-06-30,0.06
 ```
+
+De huidige app gebruikt een eenvoudig dynamisch tariefmodel op basis van
+piekuur (07:00-22:00) versus daluur. Voor realistische berekeningen kan je
+de tariefmodule aanpassen en marktprijzen koppelen.
 
 ## Beperkingen
 
