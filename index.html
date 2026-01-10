@@ -158,6 +158,15 @@
       const chartBars = document.querySelector(".chart.bars");
 
       const resetButton = document.getElementById("reset-button");
+
+      fileInput.addEventListener("change", () => {
+        clearFeedback();
+        if (fileInput.files.length) {
+          uploadSuccess.classList.remove("is-hidden");
+          uploadSuccess.innerHTML = `<strong>Bestand geselecteerd:</strong> ${fileInput.files[0].name}`;
+        }
+      });
+
       resetButton.addEventListener("click", () => {
         fileInput.value = "";
         referenceInput.value = "0.30";
@@ -295,7 +304,11 @@
           return;
         }
 
-        showSuccess();
+        const analyzeButton = uploadForm.querySelector('button[type="submit"]');
+        const originalText = analyzeButton.textContent;
+        analyzeButton.disabled = true;
+        analyzeButton.textContent = "Verwerken...";
+
         const formData = new FormData();
         formData.append("file", fileInput.files[0]);
         formData.append("reference_price", referenceInput.value || "0.30");
@@ -310,11 +323,15 @@
             showError(payload.error || "Onbekende fout.", payload.details || []);
             return;
           }
+          uploadSuccess.innerHTML = "<strong>Analyse voltooid!</strong> Je resultaten zijn bijgewerkt.";
           updateSummary(payload.summary);
           updateMonthlyTable(payload.monthly);
           updateBars(payload.monthly);
         } catch (error) {
           showError("Kon geen verbinding maken met de server.");
+        } finally {
+          analyzeButton.disabled = false;
+          analyzeButton.textContent = originalText;
         }
       });
     </script>
