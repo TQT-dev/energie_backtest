@@ -118,8 +118,10 @@ def _parse_csv(
             or ""
         date_key = _find_header(header, ["datum"]) or ""
         time_key = _find_header(header, ["tijd", "uur"]) or ""
-        value_key = _find_header(header, ["waarde", "value", "kwh", "verbruik"]) \
-            or ""
+        value_key = _find_header(
+            header,
+            ["afname_kwh", "waarde", "value", "kwh", "verbruik", "afname"],
+        ) or ""
 
         if not value_key or (not timestamp_key and not (date_key and time_key)):
             errors.append(
@@ -199,7 +201,10 @@ def _parse_xlsx(
     timestamp_key = _find_header(header, ["timestamp", "tijdstip"]) or ""
     date_key = _find_header(header, ["datum"]) or ""
     time_key = _find_header(header, ["tijd", "uur"]) or ""
-    value_key = _find_header(header, ["waarde", "value", "kwh", "verbruik"]) or ""
+    value_key = _find_header(
+        header,
+        ["afname_kwh", "waarde", "value", "kwh", "verbruik", "afname"],
+    ) or ""
 
     if not value_key or (not timestamp_key and not (date_key and time_key)):
         errors.append(
