@@ -17,7 +17,7 @@ energieprijs-backtest te draaien.
 
 ## Lokale app starten
 
-Installeer de dependencies en start de Flask-app:
+Installeer (optionele) dependencies en start de app:
 
 ```
 python -m venv .venv
@@ -27,6 +27,9 @@ python app.py
 ```
 
 Open daarna `http://localhost:8000` om het uploadscherm te gebruiken.
+
+> Let op: `openpyxl` is alleen nodig als je Excel-bestanden uploadt. CSV-upload
+> werkt zonder extra dependencies.
 
 ## Verwachte data (Fluvius-export)
 

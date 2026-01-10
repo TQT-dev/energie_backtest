@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import cgi
+import json
 from datetime import datetime
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-
-from flask import Flask, jsonify, request, send_from_directory
+from typing import Any
+from urllib.parse import urlparse
 
 from energie_backtest.costs import calculate_quarter_costs
 from energie_backtest.dynamic_tariffs import build_tariffs_for_consumption, peak_share
@@ -13,62 +16,96 @@ from upload_flow import UploadValidationError, parse_fluvius_upload
 
 APP_ROOT = Path(__file__).resolve().parent
 
-app = Flask(__name__, static_folder=None)
 
+class BacktestHandler(BaseHTTPRequestHandler):
+    def do_GET(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path == "/":
+            self._send_file("index.html", "text/html; charset=utf-8")
+            return
+        if parsed.path == "/styles.css":
+            self._send_file("styles.css", "text/css; charset=utf-8")
+            return
+        self.send_error(404, "Not Found")
 
-@app.get("/")
-def index() -> object:
-    return send_from_directory(APP_ROOT, "index.html")
+    def do_POST(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path != "/api/upload":
+            self.send_error(404, "Not Found")
+            return
 
+        content_type = self.headers.get("Content-Type", "")
+        if "multipart/form-data" not in content_type:
+            self._send_json({"error": "Ongeldig upload formaat."}, status=400)
+            return
 
-@app.get("/styles.css")
-def styles() -> object:
-    return send_from_directory(APP_ROOT, "styles.css")
-
-
-@app.post("/api/upload")
-def upload() -> object:
-    if "file" not in request.files:
-        return jsonify({"error": "Geen bestand ontvangen."}), 400
-    file = request.files["file"]
-    if not file.filename:
-        return jsonify({"error": "Bestandsnaam ontbreekt."}), 400
-
-    try:
-        reference_price = float(request.form.get("reference_price", "0.30"))
-    except ValueError:
-        return jsonify({"error": "Referentieprijs is ongeldig."}), 400
-
-    try:
-        parsed = parse_fluvius_upload(file.read(), file.filename)
-    except UploadValidationError as exc:
-        return jsonify({"error": "Upload validatie mislukt.", "details": exc.user_messages()}), 422
-
-    consumption = [
-        ConsumptionRecord(
-            timestamp=_parse_timestamp(item["timestamp_utc"]),
-            consumption_kwh=float(item["value"]),
+        form = cgi.FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ={"REQUEST_METHOD": "POST", "CONTENT_TYPE": content_type},
         )
-        for item in parsed.series
-    ]
+        file_item = form["file"] if "file" in form else None
+        if file_item is None or not getattr(file_item, "filename", ""):
+            self._send_json({"error": "Geen bestand ontvangen."}, status=400)
+            return
 
-    tariffs = build_tariffs_for_consumption(consumption)
-    costs = calculate_quarter_costs(
-        consumption,
-        tariffs,
-        fallback_tariff_eur_per_kwh=reference_price,
-    )
-    report = build_cost_report(costs, reference_price, period="month")
+        reference_raw = form.getfirst("reference_price", "0.30")
+        try:
+            reference_price = float(reference_raw)
+        except ValueError:
+            self._send_json({"error": "Referentieprijs is ongeldig."}, status=400)
+            return
 
-    monthly = _format_monthly(report.aggregated_costs, report.aggregated_reference_costs)
-    summary = _build_summary(report, monthly, consumption)
+        file_bytes = file_item.file.read()
+        try:
+            parsed_upload = parse_fluvius_upload(file_bytes, file_item.filename)
+        except UploadValidationError as exc:
+            self._send_json(
+                {"error": "Upload validatie mislukt.", "details": exc.user_messages()},
+                status=422,
+            )
+            return
 
-    return jsonify(
-        {
-            "summary": summary,
-            "monthly": monthly,
-        }
-    )
+        consumption = [
+            ConsumptionRecord(
+                timestamp=_parse_timestamp(item["timestamp_utc"]),
+                consumption_kwh=float(item["value"]),
+            )
+            for item in parsed_upload.series
+        ]
+
+        tariffs = build_tariffs_for_consumption(consumption)
+        costs = calculate_quarter_costs(
+            consumption,
+            tariffs,
+            fallback_tariff_eur_per_kwh=reference_price,
+        )
+        report = build_cost_report(costs, reference_price, period="month")
+
+        monthly = _format_monthly(report.aggregated_costs, report.aggregated_reference_costs)
+        summary = _build_summary(report, monthly, consumption)
+
+        self._send_json({"summary": summary, "monthly": monthly})
+
+    def _send_file(self, filename: str, content_type: str) -> None:
+        path = APP_ROOT / filename
+        if not path.exists():
+            self.send_error(404, "Not Found")
+            return
+        payload = path.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def _send_json(self, payload: dict[str, Any], *, status: int = 200) -> None:
+        data = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
 
 
 def _parse_timestamp(raw: str | float) -> datetime:
@@ -77,7 +114,10 @@ def _parse_timestamp(raw: str | float) -> datetime:
     return datetime.fromisoformat(str(raw))
 
 
-def _format_monthly(costs: dict[tuple[int, int], float], reference: dict[tuple[int, int], float]) -> list[dict[str, object]]:
+def _format_monthly(
+    costs: dict[tuple[int, int], float],
+    reference: dict[tuple[int, int], float],
+) -> list[dict[str, object]]:
     formatted = []
     for (year, month), value in sorted(costs.items()):
         reference_value = reference.get((year, month), 0.0)
@@ -108,5 +148,11 @@ def _build_summary(
     }
 
 
+def run(host: str = "0.0.0.0", port: int = 8000) -> None:
+    server = HTTPServer((host, port), BacktestHandler)
+    print(f"Serving on http://{host}:{port}")
+    server.serve_forever()
+
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    run()

@@ -116,11 +116,11 @@ def _parse_csv(
         header = [name.strip() for name in reader.fieldnames]
         timestamp_key = _find_header(header, ["timestamp", "tijdstip"]) \
             or ""
-        date_key = _find_header(header, ["datum"]) or ""
-        time_key = _find_header(header, ["tijd", "uur"]) or ""
+        date_key = _find_header(header, ["van (datum)", "datum"]) or ""
+        time_key = _find_header(header, ["van (tijdstip)", "tijd", "uur"]) or ""
         value_key = _find_header(
             header,
-            ["afname_kwh", "waarde", "value", "kwh", "verbruik", "afname"],
+            ["volume", "afname_kwh", "waarde", "value", "kwh", "verbruik", "afname"],
         ) or ""
 
         if not value_key or (not timestamp_key and not (date_key and time_key)):
@@ -199,11 +199,11 @@ def _parse_xlsx(
 
     header = [str(cell).strip() if cell is not None else "" for cell in rows[0]]
     timestamp_key = _find_header(header, ["timestamp", "tijdstip"]) or ""
-    date_key = _find_header(header, ["datum"]) or ""
-    time_key = _find_header(header, ["tijd", "uur"]) or ""
+    date_key = _find_header(header, ["van (datum)", "datum"]) or ""
+    time_key = _find_header(header, ["van (tijdstip)", "tijd", "uur"]) or ""
     value_key = _find_header(
         header,
-        ["afname_kwh", "waarde", "value", "kwh", "verbruik", "afname"],
+        ["volume", "afname_kwh", "waarde", "value", "kwh", "verbruik", "afname"],
     ) or ""
 
     if not value_key or (not timestamp_key and not (date_key and time_key)):
