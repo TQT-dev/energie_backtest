@@ -17,7 +17,7 @@
             maandelijkse trends en piek- versus dalverbruik.
           </p>
         </div>
-        <button class="primary">Nieuwe analyse starten</button>
+        <button class="primary" id="reset-button">Nieuwe analyse starten</button>
       </header>
 
       <section class="upload-card">
@@ -27,13 +27,26 @@
             <h2>Bestand uploaden</h2>
             <p class="muted">CSV of XLSX, maximaal 10 MB.</p>
           </div>
-          <label class="upload-button" for="file-upload">Selecteer bestand</label>
-          <input id="file-upload" type="file" accept=".csv,.xlsx" />
-          <div class="upload-feedback error">
-            <strong>Upload mislukt.</strong>
-            Controleer of je bestand een geldig Fluvius-format heeft en probeer opnieuw.
-          </div>
-          <div class="upload-feedback success">
+          <form id="upload-form" class="upload-form">
+            <label class="upload-button" for="file-upload">Selecteer bestand</label>
+            <input id="file-upload" name="file" type="file" accept=".csv,.xlsx" />
+            <div class="input-row">
+              <label class="input-label" for="reference-price">
+                Referentieprijs (€/kWh)
+              </label>
+              <input
+                id="reference-price"
+                name="reference_price"
+                type="number"
+                min="0"
+                step="0.001"
+                value="0.30"
+              />
+            </div>
+            <button class="secondary" type="submit">Analyseer upload</button>
+          </form>
+          <div class="upload-feedback error is-hidden" id="upload-error"></div>
+          <div class="upload-feedback success is-hidden" id="upload-success">
             <strong>Bestand ontvangen!</strong>
             Je gegevens worden nu verwerkt.
           </div>
@@ -43,18 +56,18 @@
           <div class="summary-metrics">
             <div class="metric">
               <p class="metric-label">Totale kost</p>
-              <p class="metric-value">€ 1.482,30</p>
-              <span class="metric-trend positive">+4,2% vs vorig jaar</span>
+              <p class="metric-value" id="total-cost">€ 0,00</p>
+              <span class="metric-trend" id="difference-trend">--</span>
             </div>
             <div class="metric">
               <p class="metric-label">Gemiddelde maandkost</p>
-              <p class="metric-value">€ 123,50</p>
-              <span class="metric-trend neutral">stabiel</span>
+              <p class="metric-value" id="average-monthly">€ 0,00</p>
+              <span class="metric-trend neutral" id="reference-total">--</span>
             </div>
             <div class="metric">
               <p class="metric-label">Piekuren</p>
-              <p class="metric-value">64%</p>
-              <span class="metric-trend warning">hoog aandeel</span>
+              <p class="metric-value" id="peak-share">0%</p>
+              <span class="metric-trend warning" id="peak-label">--</span>
             </div>
           </div>
           <div class="download-card">
@@ -63,8 +76,8 @@
               <p class="muted">Exporteer de analyse als PDF of Excel.</p>
             </div>
             <div class="download-actions">
-              <button class="secondary">Download PDF</button>
-              <button class="ghost">Download Excel</button>
+              <button class="secondary" disabled>Download PDF</button>
+              <button class="ghost" disabled>Download Excel</button>
             </div>
           </div>
         </div>
@@ -80,33 +93,22 @@
             <h3>Kost per maand</h3>
             <p class="muted">Laatste 12 maanden</p>
             <div class="chart bars" aria-label="Kost per maand">
-              <span style="--value: 78" data-label="Jan">€118</span>
-              <span style="--value: 68" data-label="Feb">€102</span>
-              <span style="--value: 82" data-label="Mrt">€124</span>
-              <span style="--value: 74" data-label="Apr">€109</span>
-              <span style="--value: 90" data-label="Mei">€132</span>
-              <span style="--value: 96" data-label="Jun">€144</span>
-              <span style="--value: 70" data-label="Jul">€106</span>
-              <span style="--value: 88" data-label="Aug">€128</span>
-              <span style="--value: 79" data-label="Sep">€117</span>
-              <span style="--value: 86" data-label="Okt">€125</span>
-              <span style="--value: 92" data-label="Nov">€136</span>
-              <span style="--value: 80" data-label="Dec">€119</span>
+              <span style="--value: 0" data-label="--">€0</span>
             </div>
           </div>
           <div class="card">
             <h3>Piekuren vs. daluren</h3>
             <p class="muted">Verdeling van verbruik</p>
             <div class="chart donut" aria-label="Piekuren vs daluren">
-              <div class="donut-ring"></div>
+              <div class="donut-ring" id="donut-ring"></div>
               <div class="donut-center">
-                <p class="donut-value">64%</p>
+                <p class="donut-value" id="donut-value">0%</p>
                 <span class="muted">piekuren</span>
               </div>
             </div>
             <div class="legend">
-              <div><span class="dot peak"></span>Piekuren (64%)</div>
-              <div><span class="dot offpeak"></span>Daluren (36%)</div>
+              <div><span class="dot peak"></span>Piekuren (<span id="legend-peak">0%</span>)</div>
+              <div><span class="dot offpeak"></span>Daluren (<span id="legend-offpeak">0%</span>)</div>
             </div>
           </div>
           <div class="card">
@@ -116,29 +118,17 @@
               <thead>
                 <tr>
                   <th>Maand</th>
-                  <th>Verbruik</th>
-                  <th>Netkosten</th>
-                  <th>Totaal</th>
+                  <th>Dynamisch</th>
+                  <th>Referentie</th>
+                  <th>Verschil</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="monthly-breakdown">
                 <tr>
-                  <td>September</td>
-                  <td>312 kWh</td>
-                  <td>€ 28,10</td>
-                  <td>€ 118,40</td>
-                </tr>
-                <tr>
-                  <td>Oktober</td>
-                  <td>351 kWh</td>
-                  <td>€ 30,90</td>
-                  <td>€ 129,10</td>
-                </tr>
-                <tr>
-                  <td>November</td>
-                  <td>390 kWh</td>
-                  <td>€ 32,40</td>
-                  <td>€ 140,80</td>
+                  <td>--</td>
+                  <td>€ 0,00</td>
+                  <td>€ 0,00</td>
+                  <td>€ 0,00</td>
                 </tr>
               </tbody>
             </table>
@@ -146,5 +136,187 @@
         </div>
       </section>
     </div>
+    <script>
+      const uploadForm = document.getElementById("upload-form");
+      const fileInput = document.getElementById("file-upload");
+      const referenceInput = document.getElementById("reference-price");
+      const uploadError = document.getElementById("upload-error");
+      const uploadSuccess = document.getElementById("upload-success");
+
+      const totalCost = document.getElementById("total-cost");
+      const averageMonthly = document.getElementById("average-monthly");
+      const differenceTrend = document.getElementById("difference-trend");
+      const referenceTotal = document.getElementById("reference-total");
+      const peakShare = document.getElementById("peak-share");
+      const peakLabel = document.getElementById("peak-label");
+
+      const donutRing = document.getElementById("donut-ring");
+      const donutValue = document.getElementById("donut-value");
+      const legendPeak = document.getElementById("legend-peak");
+      const legendOffpeak = document.getElementById("legend-offpeak");
+      const monthlyBreakdown = document.getElementById("monthly-breakdown");
+      const chartBars = document.querySelector(".chart.bars");
+
+      const resetButton = document.getElementById("reset-button");
+      resetButton.addEventListener("click", () => {
+        fileInput.value = "";
+        referenceInput.value = "0.30";
+        clearFeedback();
+        resetDashboard();
+      });
+
+      function clearFeedback() {
+        uploadError.classList.add("is-hidden");
+        uploadSuccess.classList.add("is-hidden");
+        uploadError.textContent = "";
+      }
+
+      function resetDashboard() {
+        totalCost.textContent = "€ 0,00";
+        averageMonthly.textContent = "€ 0,00";
+        differenceTrend.textContent = "--";
+        differenceTrend.className = "metric-trend";
+        referenceTotal.textContent = "--";
+        peakShare.textContent = "0%";
+        peakLabel.textContent = "--";
+        updatePeakChart(0);
+        updateMonthlyTable([]);
+        updateBars([]);
+      }
+
+      function showError(message, details = []) {
+        uploadError.classList.remove("is-hidden");
+        uploadError.innerHTML = `<strong>Upload mislukt.</strong><div>${message}</div>`;
+        if (details.length) {
+          const list = document.createElement("ul");
+          list.className = "error-list";
+          details.slice(0, 5).forEach((item) => {
+            const li = document.createElement("li");
+            li.textContent = `${item.message} (rij ${item.row || "-"})`;
+            list.appendChild(li);
+          });
+          uploadError.appendChild(list);
+        }
+      }
+
+      function showSuccess() {
+        uploadSuccess.classList.remove("is-hidden");
+      }
+
+      function formatCurrency(value) {
+        return new Intl.NumberFormat("nl-BE", {
+          style: "currency",
+          currency: "EUR",
+        }).format(value);
+      }
+
+      function formatPercent(value) {
+        return `${value.toFixed(1)}%`;
+      }
+
+      function updateSummary(summary) {
+        totalCost.textContent = formatCurrency(summary.total_cost_eur);
+        averageMonthly.textContent = formatCurrency(summary.average_monthly_cost_eur);
+        referenceTotal.textContent = `Referentie ${formatCurrency(
+          summary.reference_cost_eur
+        )}`;
+
+        const diff = summary.difference_eur;
+        const diffLabel = diff >= 0 ? "meer dan referentie" : "minder dan referentie";
+        differenceTrend.textContent = `${formatPercent(
+          summary.difference_pct
+        )} ${diffLabel}`;
+        differenceTrend.className =
+          "metric-trend " + (diff >= 0 ? "warning" : "positive");
+
+        peakShare.textContent = formatPercent(summary.peak_share_pct);
+        peakLabel.textContent =
+          summary.peak_share_pct >= 60 ? "hoog aandeel" : "evenwichtig";
+        updatePeakChart(summary.peak_share_pct);
+      }
+
+      function updatePeakChart(peakPct) {
+        const clamped = Math.min(100, Math.max(0, peakPct));
+        donutRing.style.background = `conic-gradient(var(--primary) 0 ${clamped}%, #e8eefc ${clamped}% 100%)`;
+        donutValue.textContent = `${clamped.toFixed(0)}%`;
+        legendPeak.textContent = `${clamped.toFixed(0)}%`;
+        legendOffpeak.textContent = `${(100 - clamped).toFixed(0)}%`;
+      }
+
+      function updateMonthlyTable(monthly) {
+        monthlyBreakdown.innerHTML = "";
+        if (!monthly.length) {
+          const row = document.createElement("tr");
+          row.innerHTML =
+            "<td>--</td><td>€ 0,00</td><td>€ 0,00</td><td>€ 0,00</td>";
+          monthlyBreakdown.appendChild(row);
+          return;
+        }
+        monthly.forEach((item) => {
+          const row = document.createElement("tr");
+          const diff = item.cost_eur - item.reference_cost_eur;
+          row.innerHTML = `
+            <td>${item.period}</td>
+            <td>${formatCurrency(item.cost_eur)}</td>
+            <td>${formatCurrency(item.reference_cost_eur)}</td>
+            <td>${formatCurrency(diff)}</td>
+          `;
+          monthlyBreakdown.appendChild(row);
+        });
+      }
+
+      function updateBars(monthly) {
+        chartBars.innerHTML = "";
+        if (!monthly.length) {
+          const bar = document.createElement("span");
+          bar.style.setProperty("--value", 0);
+          bar.dataset.label = "--";
+          bar.textContent = "€0";
+          chartBars.appendChild(bar);
+          return;
+        }
+        const max = Math.max(...monthly.map((item) => item.cost_eur));
+        monthly.slice(-12).forEach((item) => {
+          const bar = document.createElement("span");
+          const value = max === 0 ? 0 : Math.round((item.cost_eur / max) * 100);
+          bar.style.setProperty("--value", value);
+          bar.dataset.label = item.period.split("-")[1];
+          bar.textContent = `€${item.cost_eur.toFixed(0)}`;
+          chartBars.appendChild(bar);
+        });
+      }
+
+      uploadForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        clearFeedback();
+
+        if (!fileInput.files.length) {
+          showError("Selecteer eerst een bestand.");
+          return;
+        }
+
+        showSuccess();
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("reference_price", referenceInput.value || "0.30");
+
+        try {
+          const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          const payload = await response.json();
+          if (!response.ok) {
+            showError(payload.error || "Onbekende fout.", payload.details || []);
+            return;
+          }
+          updateSummary(payload.summary);
+          updateMonthlyTable(payload.monthly);
+          updateBars(payload.monthly);
+        } catch (error) {
+          showError("Kon geen verbinding maken met de server.");
+        }
+      });
+    </script>
   </body>
 </html>
