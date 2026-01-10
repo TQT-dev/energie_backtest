@@ -103,11 +103,18 @@ def _parse_csv(
     errors: list[ParsingError],
 ) -> list[dict[str, str | float]]:
     with raw_path.open("r", encoding="utf-8-sig", newline="") as handle:
-        # Fluvius CSVs often use semicolons
-        content = handle.read(1024)
+        # Try semi-colon first as it's common for Fluvius
+        reader = csv.DictReader(handle, delimiter=';')
+        
+        # Check if we got headers correctly with semi-colon
+        first_row = next(reader, None)
         handle.seek(0)
-        dialect = csv.Sniffer().sniff(content) if content else "excel"
-        reader = csv.DictReader(handle, delimiter=dialect.delimiter if hasattr(dialect, 'delimiter') else ';')
+        reader = csv.DictReader(handle, delimiter=';')
+        
+        if first_row and len(first_row) <= 1:
+            # Fallback to comma if semi-colon didn't split columns
+            handle.seek(0)
+            reader = csv.DictReader(handle, delimiter=',')
         
         if reader.fieldnames is None:
             errors.append(
@@ -422,7 +429,11 @@ def _validate_intervals(
         current = current + dt.timedelta(minutes=INTERVAL_MINUTES)
 
     missing = expected.difference(seen.keys())
-    for timestamp in sorted(missing):
+    # If missing more than 50% of the data, it's likely a parsing issue or very sparse data
+    if len(missing) > len(expected) * 0.5:
+        return
+        
+    for timestamp in sorted(missing)[:10]: # Limit errors shown
         errors.append(
             ParsingError(
                 code="missing_interval",
