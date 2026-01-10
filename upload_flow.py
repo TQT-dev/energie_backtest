@@ -398,7 +398,11 @@ def _validate_intervals(
     for value in local_times:
         seen[value] = seen.get(value, 0) + 1
 
-    duplicates = [timestamp for timestamp, count in seen.items() if count > 1]
+    # Don't report duplicate errors for daylight savings overlap (October)
+    duplicates = [
+        timestamp for timestamp, count in seen.items() 
+        if count > 1 and not (timestamp.month == 10 and timestamp.day >= 25)
+    ]
     for timestamp in duplicates:
         errors.append(
             ParsingError(
