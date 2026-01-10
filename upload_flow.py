@@ -433,6 +433,11 @@ def _validate_intervals(
         current = current + dt.timedelta(minutes=INTERVAL_MINUTES)
 
     missing = expected.difference(seen.keys())
+    # Filter out missing intervals that are expected due to daylight savings (March)
+    missing = {
+        timestamp for timestamp in missing
+        if not (timestamp.month == 3 and timestamp.day >= 25 and timestamp.hour == 2)
+    }
     # If missing more than 50% of the data, it's likely a parsing issue or very sparse data
     if len(missing) > len(expected) * 0.5:
         return
