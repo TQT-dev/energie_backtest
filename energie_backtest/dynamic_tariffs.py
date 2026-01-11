@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Iterable
 from zoneinfo import ZoneInfo
 
-from .models import ConsumptionRecord, Tariff, TariffSeries
+from .models import ConsumptionRecord, QuarterCost, Tariff, TariffSeries
 
 
 def build_tariffs_for_consumption(
@@ -53,6 +53,25 @@ def peak_share(
     if overall == 0:
         return 0.0
     return peak_total / overall
+
+
+def peak_costs(
+    costs: Iterable[QuarterCost],
+    *,
+    timezone: str = "Europe/Brussels",
+    peak_start_hour: int = 7,
+    peak_end_hour: int = 22,
+) -> tuple[float, float]:
+    tzinfo = ZoneInfo(timezone)
+    peak_total = 0.0
+    offpeak_total = 0.0
+    for item in costs:
+        local_dt = item.timestamp.astimezone(tzinfo)
+        if _is_peak(local_dt, peak_start_hour, peak_end_hour):
+            peak_total += item.total_cost_eur
+        else:
+            offpeak_total += item.total_cost_eur
+    return peak_total, offpeak_total
 
 
 def _is_peak(local_dt: datetime, peak_start_hour: int, peak_end_hour: int) -> bool:

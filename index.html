@@ -43,6 +43,94 @@
                 value="0.30"
               />
             </div>
+            <details class="settings">
+              <summary class="settings-summary">Tarieven en piekuren aanpassen</summary>
+              <div class="settings-body">
+                <div class="input-row">
+                  <label class="input-label" for="timezone">
+                    Tijdzone (bijv. Europe/Brussels)
+                  </label>
+                  <input
+                    id="timezone"
+                    name="timezone"
+                    type="text"
+                    value="Europe/Brussels"
+                  />
+                </div>
+                <div class="input-grid">
+                  <div class="input-row">
+                    <label class="input-label" for="base-offpeak">
+                      Basis daluren (€/kWh)
+                    </label>
+                    <input
+                      id="base-offpeak"
+                      name="base_offpeak_price"
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      value="0.18"
+                    />
+                  </div>
+                  <div class="input-row">
+                    <label class="input-label" for="base-peak">
+                      Basis piekuren (€/kWh)
+                    </label>
+                    <input
+                      id="base-peak"
+                      name="base_peak_price"
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      value="0.28"
+                    />
+                  </div>
+                  <div class="input-row">
+                    <label class="input-label" for="surcharge">
+                      Toeslag (€/kWh)
+                    </label>
+                    <input
+                      id="surcharge"
+                      name="surcharge_price"
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      value="0.02"
+                    />
+                  </div>
+                  <div class="input-row">
+                    <label class="input-label" for="peak-start">
+                      Piek startuur
+                    </label>
+                    <input
+                      id="peak-start"
+                      name="peak_start_hour"
+                      type="number"
+                      min="0"
+                      max="23"
+                      step="1"
+                      value="7"
+                    />
+                  </div>
+                  <div class="input-row">
+                    <label class="input-label" for="peak-end">
+                      Piek einduur
+                    </label>
+                    <input
+                      id="peak-end"
+                      name="peak_end_hour"
+                      type="number"
+                      min="1"
+                      max="24"
+                      step="1"
+                      value="22"
+                    />
+                  </div>
+                </div>
+                <p class="muted settings-hint">
+                  Piekuren lopen van startuur tot het einduur (exclusief).
+                </p>
+              </div>
+            </details>
             <button class="secondary" type="submit">Analyseer upload</button>
           </form>
           <div class="upload-feedback error is-hidden" id="upload-error"></div>
@@ -68,6 +156,16 @@
               <p class="metric-label">Piekuren</p>
               <p class="metric-value" id="peak-share">0%</p>
               <span class="metric-trend warning" id="peak-label">--</span>
+            </div>
+          </div>
+          <div class="summary-breakdown">
+            <div class="summary-row">
+              <span>Piekuren kosten</span>
+              <strong id="peak-cost">€ 0,00</strong>
+            </div>
+            <div class="summary-row">
+              <span>Daluren kosten</span>
+              <strong id="offpeak-cost">€ 0,00</strong>
             </div>
           </div>
           <div class="download-card">
@@ -140,6 +238,12 @@
       const uploadForm = document.getElementById("upload-form");
       const fileInput = document.getElementById("file-upload");
       const referenceInput = document.getElementById("reference-price");
+      const timezoneInput = document.getElementById("timezone");
+      const baseOffpeakInput = document.getElementById("base-offpeak");
+      const basePeakInput = document.getElementById("base-peak");
+      const surchargeInput = document.getElementById("surcharge");
+      const peakStartInput = document.getElementById("peak-start");
+      const peakEndInput = document.getElementById("peak-end");
       const uploadError = document.getElementById("upload-error");
       const uploadSuccess = document.getElementById("upload-success");
 
@@ -149,6 +253,8 @@
       const referenceTotal = document.getElementById("reference-total");
       const peakShare = document.getElementById("peak-share");
       const peakLabel = document.getElementById("peak-label");
+      const peakCost = document.getElementById("peak-cost");
+      const offpeakCost = document.getElementById("offpeak-cost");
 
       const donutRing = document.getElementById("donut-ring");
       const donutValue = document.getElementById("donut-value");
@@ -170,6 +276,12 @@
       resetButton.addEventListener("click", () => {
         fileInput.value = "";
         referenceInput.value = "0.30";
+        timezoneInput.value = "Europe/Brussels";
+        baseOffpeakInput.value = "0.18";
+        basePeakInput.value = "0.28";
+        surchargeInput.value = "0.02";
+        peakStartInput.value = "7";
+        peakEndInput.value = "22";
         clearFeedback();
         resetDashboard();
       });
@@ -188,6 +300,8 @@
         referenceTotal.textContent = "--";
         peakShare.textContent = "0%";
         peakLabel.textContent = "--";
+        peakCost.textContent = "€ 0,00";
+        offpeakCost.textContent = "€ 0,00";
         updatePeakChart(0);
         updateMonthlyTable([]);
         updateBars([]);
@@ -241,6 +355,8 @@
         peakShare.textContent = formatPercent(summary.peak_share_pct);
         peakLabel.textContent =
           summary.peak_share_pct >= 60 ? "hoog aandeel" : "evenwichtig";
+        peakCost.textContent = formatCurrency(summary.peak_cost_eur);
+        offpeakCost.textContent = formatCurrency(summary.offpeak_cost_eur);
         updatePeakChart(summary.peak_share_pct);
       }
 
@@ -312,6 +428,12 @@
         const formData = new FormData();
         formData.append("file", fileInput.files[0]);
         formData.append("reference_price", referenceInput.value || "0.30");
+        formData.append("timezone", timezoneInput.value || "Europe/Brussels");
+        formData.append("base_offpeak_price", baseOffpeakInput.value || "0.18");
+        formData.append("base_peak_price", basePeakInput.value || "0.28");
+        formData.append("surcharge_price", surchargeInput.value || "0.02");
+        formData.append("peak_start_hour", peakStartInput.value || "7");
+        formData.append("peak_end_hour", peakEndInput.value || "22");
 
         try {
           const response = await fetch("/api/upload", {

@@ -143,9 +143,23 @@ input[type="number"] {
   width: 100%;
 }
 
+input[type="text"] {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  font-size: 14px;
+  width: 100%;
+}
+
 .input-row {
   display: grid;
   gap: 6px;
+}
+
+.input-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
 .input-label {
@@ -193,6 +207,43 @@ input[type="number"] {
 .summary-metrics {
   display: grid;
   gap: 16px;
+}
+
+.summary-breakdown {
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #f7f9ff;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.settings {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fdfdff;
+}
+
+.settings-summary {
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.settings-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.settings-hint {
+  font-size: 12px;
 }
 
 .metric {
